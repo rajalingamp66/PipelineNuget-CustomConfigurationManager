@@ -86,7 +86,11 @@ pipeline {
 
     post {
         always {
-            cleanWs()
+            // ✅ Wrap inside node to ensure workspace context for cleanWs
+            node {
+                cleanWs()
+            }
+
             script {
                 currentBuild.description = "${params.RELEASE_TYPE} : ${newTag}"
             }

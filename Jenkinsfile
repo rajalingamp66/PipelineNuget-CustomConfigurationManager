@@ -10,7 +10,6 @@ pipeline {
     }
 
     parameters {
-        // Replaced gitParameter with standard string input
         string(name: 'BRANCH', defaultValue: 'main_1.0', description: 'Git Branch to build')
         choice(name: 'RELEASE_TYPE', choices: ['major', 'minor'], description: 'Select the release type for build')
     }
@@ -18,7 +17,6 @@ pipeline {
     environment {
         NUGET_SOURCE = "https://nuget.pkg.github.com/rajalingamp66/index.json"
         GITHUB_USERNAME = "Rajalingam.Periyathambi@nice.com"
-        GITHUB_TOKEN = credentials("github-packages-read-write")
     }
 
     stages {
@@ -55,12 +53,22 @@ pipeline {
 
         stage('Push to NuGet') {
             steps {
-                bat """
-                    dotnet nuget push PipelineNuget-CustomConfigurationManager\\src\\CustomConfigurationManager\\bin\\Release\\*.nupkg ^
-                        -k ${env.GITHUB_TOKEN} ^
-                        -s ${env.NUGET_SOURCE} ^
-                        --skip-duplicate
-                """
+                script {
+                    withCredentials([usernamePassword(credentialsId: 'github-packages-read-write', usernameVariable: 'GITHUB_USER', passwordVariable: 'GITHUB_TOKEN')]) {
+                        bat """
+                            dotnet nuget add source https://nuget.pkg.github.com/${GITHUB_USER}/index.json ^
+                                --name github ^
+                                --username ${GITHUB_USER} ^
+                                --password ${GITHUB_TOKEN} ^
+                                --store-password-in-clear-text
+
+                            dotnet nuget push PipelineNuget-CustomConfigurationManager\\src\\CustomConfigurationManager\\bin\\Release\\*.nupkg ^
+                                -k ${GITHUB_TOKEN} ^
+                                -s https://nuget.pkg.github.com/${GITHUB_USER}/index.json ^
+                                --skip-duplicate
+                        """
+                    }
+                }
             }
         }
 
@@ -81,15 +89,15 @@ pipeline {
         }
     }
 
-  post {
-    always {
-        script {
-            currentBuild.description = "${params.RELEASE_TYPE} : ${newTag}"
-        }
+    post {
+        always {
+            script {
+                currentBuild.description = "${params.RELEASE_TYPE} : ${newTag}"
+            }
 
-        node('BuildAgent01') {
-            cleanWs()
+            node {
+                cleanWs()
+            }
         }
     }
-}
 }

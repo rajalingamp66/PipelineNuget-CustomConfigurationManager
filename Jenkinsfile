@@ -5,6 +5,10 @@ import groovy.transform.Field
 pipeline {
     agent { label 'doa-injwn01.in.lab' }
 
+    options {
+        skipDefaultCheckout()
+    }
+
     parameters {
         gitParameter(
             branchFilter: 'origin/(.*)',
@@ -25,7 +29,7 @@ pipeline {
     }
 
     stages {
-        stage('Check Git Access') {
+        stage('Checkout') {
             steps {
                 git credentialsId: 'github-nice-cxone',
                     url: 'https://github.com/rajalingamp66/PipelineNuget-CustomConfigurationManager.git',

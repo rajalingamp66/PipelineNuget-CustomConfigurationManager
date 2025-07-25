@@ -1,0 +1,65 @@
+param (
+  [string]$release,
+  [string]$branchName
+)
+
+function createNewVersion([string]$branchName, [string]$release, [string]$latestVersion) {
+  $latestVersion = $latestVersion.Replace("-alpha", "")
+  # Split the current version into its major, minor, and patch components
+  $versionComponents = $latestVersion -split "\."
+
+  # Update the version based on the specified release type and branch name
+  if ($branchName -eq "master") {
+    if ($release -eq "major") {
+      $versionComponents[0] = [int]$versionComponents[0] + 1
+      $versionComponents[1] = 0
+      $versionComponents[2] = 0
+    } else {
+      $versionComponents[1] = [int]$versionComponents[1] + 1
+      $versionComponents[2] = 0
+    }
+    $newVersion = "$($versionComponents[0]).$($versionComponents[1]).$($versionComponents[2])"
+  } else {
+    if ($release -eq "major") {
+      $versionComponents[1] = [int]$versionComponents[1] + 1
+      $newVersion = "$($versionComponents[0]).$($versionComponents[1]).0-alpha"
+    } else {
+      $versionComponents[2] = [int]$versionComponents[2] + 1
+      $newVersion = "$($versionComponents[0]).$($versionComponents[1]).$($versionComponents[2])-alpha"
+    }
+  }
+  return $newVersion
+}
+
+[Boolean]$buildChanged=$False
+[string]$latestTag=$(git describe --tags (git rev-list --tags --max-count=1))
+
+if ($latestTag) {
+  Write-Host "DEBUG: [resolveGitChanges][main] - Current tag is $latestTag"
+  $latestTagCommit=$(git rev-list -n 1 $latestTag)
+  $currentVersion=$latestTag
+}
+
+[string]$HEAD=$(git rev-parse HEAD)
+Set-Content -Path "changes.log" -Value "HEAD_COMMIT=$HEAD"
+Add-Content -Path "changes.log" -Value "latestTagCommit=$latestTagCommit"
+
+Write-Host "DEBUG: latestTag: ${latestTag} latestTagCommit: ${latestTagCommit} HEAD: ${HEAD}"
+
+if ($HEAD.Trim() -ne $latestTagCommit.Trim()) {
+    $buildChanged=$True
+    Write-Host "DEBUG: [resolveGitChanges][main] - The build has been changed"
+    Add-Content -Path "changes.log" -Value "component has been changed"
+}
+
+Write-Host "DEBUG: buildChanged: $buildChanged"
+if (-not $buildChanged) {
+  $newVersion = $currentVersion
+  write-host "DEBUG: Build has not been changed. New version(${newVersion})=currentVersion(${currentVersion})"
+}
+else {
+  $newVersion = createNewVersion -branchName $branchName -release $release -latestVersion $currentVersion
+  Write-Host "DEBUG: [resolveGitChanges][main] - bump version ${currentVersion}->${newVersion}"
+}
+
+Write-Output "${newVersion}"

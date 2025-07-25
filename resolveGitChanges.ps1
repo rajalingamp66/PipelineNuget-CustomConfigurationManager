@@ -34,16 +34,8 @@ function createNewVersion([string]$branchName, [string]$release, [string]$latest
 
 if ($latestTag) {
   Write-Host "Latest tag: $latestTag"
-
-  # ✅ Strip leading 'v' if present
-  if ($latestTag.StartsWith("v")) {
-    $cleanTag = $latestTag.Substring(1)
-  } else {
-    $cleanTag = $latestTag
-  }
-
   $latestTagCommit = (git rev-list -n 1 $latestTag)
-  $currentVersion = $cleanTag
+  $currentVersion = $latestTag
 }
 
 [string]$HEAD = (git rev-parse HEAD)

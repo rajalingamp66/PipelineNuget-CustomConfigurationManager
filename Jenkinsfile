@@ -3,34 +3,19 @@ import groovy.transform.Field
 @Field String newTag = ''
 
 pipeline {
-    agent { label 'doa-injwn01.in.lab' }
-
-    options {
-        skipDefaultCheckout()
-    }
+    agent any
 
     parameters {
-        gitParameter(
-            branchFilter: 'origin/(.*)',
-            defaultValue: 'main_1.0',
-            name: 'BRANCH',
-            type: 'PT_BRANCH',
-            listSize: '10',
-            quickFilterEnabled: true,
-            useRepository: 'https://github.com/rajalingamp66/PipelineNuget-CustomConfigurationManager'
-        )
+        string(name: 'BRANCH', defaultValue: 'main_1.0', description: 'Git branch to build')
         choice(name: 'RELEASE_TYPE', choices: ['major', 'minor'], description: 'Select the release type for build')
     }
 
     environment {
         NUGET_SOURCE = "https://nuget.pkg.github.com/rajalingamp66/index.json"
-        GITHUB_USERNAME = "Rajalingam.Periyathambi@nice.com"
-        GITHUB_TOKEN = credentials("github-packages-read-write")
     }
 
     stages {
-
-        stage('Checkout') {
+        stage('Check Git Access') {
             steps {
                 git credentialsId: 'github-nice-cxone',
                     url: 'https://github.com/rajalingamp66/PipelineNuget-CustomConfigurationManager.git',
@@ -38,36 +23,47 @@ pipeline {
             }
         }
 
-        stage("Resolve Tag") {
+        stage("Preparation Stage") {
             steps {
                 script {
                     newTag = powershell(returnStdout: true, script: ".\\resolveGitChanges.ps1 ${params.RELEASE_TYPE} ${params.BRANCH}").trim()
-                    echo "Resolved Tag: ${newTag}"
+                    echo "Branch name: ${params.BRANCH}"
+                    echo "New Tag generated: ${newTag}"
                 }
             }
         }
 
-        stage('Build & Pack') {
+        stage('Build') {
             steps {
                 script {
-                    echo "Building & Packing with tag ${newTag}"
-                    bat """
-                        cd PipelineNuget-CustomConfigurationManager\\src
-                        dotnet build --configfile .nuget\\NuGet.Config PipelineNuget-CustomConfigurationManager.sln
-                        dotnet pack -c Release -p:Version=${newTag} PipelineNuget-CustomConfigurationManager.sln
-                    """
+                    echo 'Building the NuGet package...'
+                    withEnv(["newTag=${newTag}"]) {
+                        bat '''
+                            cd src
+                            dotnet build --configfile .nuget/NuGet.Config PipelineNuget-CustomConfigurationManager.sln
+                            echo 'Packing...'
+                            dotnet pack -c Release -p:Version=%newTag% PipelineNuget-CustomConfigurationManager.sln
+                        '''
+                    }
                 }
             }
         }
 
         stage('Push to NuGet') {
             steps {
-                bat """
-                    dotnet nuget push PipelineNuget-CustomConfigurationManager\\src\\CustomConfigurationManager\\bin\\Release\\*.nupkg ^
-                        -k ${env.GITHUB_TOKEN} ^
-                        -s ${env.NUGET_SOURCE} ^
-                        --skip-duplicate
-                """
+                script {
+                    echo 'Pushing NuGet package...'
+                    withCredentials([string(credentialsId: 'github-packages-read-write', variable: 'GITHUB_TOKEN1')]) {
+                        bat '''
+                            echo Pushing to NuGet using token...
+                            dotnet nuget push src\\**\\bin\\Release\\*.nupkg ^
+                                -k %GITHUB_TOKEN1% ^
+                                -s https://nuget.pkg.github.com/rajalingamp66/index.json ^
+                                --skip-duplicate ^
+                                --verbosity detailed
+                        '''
+                    }
+                }
             }
         }
 
@@ -75,13 +71,18 @@ pipeline {
             steps {
                 script {
                     withCredentials([usernamePassword(credentialsId: 'github-nice-cxone', usernameVariable: 'GIT_USERNAME', passwordVariable: 'GIT_PASSWORD')]) {
-                        bat """
-                            git config --local credential.helper "!f() { echo username=\\%GIT_USERNAME%; echo password=\\%GIT_PASSWORD%; }; f"
-                            git config user.email "jenkins@vj-linux"
-                            git config user.name "jenkins"
-                            git tag -a ${newTag} -m "jenkins ci auto commit"
-                            git push origin refs/tags/${newTag}
-                        """
+                        withEnv(["newTag=${newTag}"]) {
+                            bat '''
+                                echo "Pushing tag: %newTag%"
+
+                                git config --local credential.helper "!f() { echo username=\\%GIT_USERNAME%; echo password=\\%GIT_PASSWORD%; }; f"
+                                git config user.email "jenkins@vj-linux"
+                                git config user.name "jenkins"
+
+                                git tag -a %newTag% -m "jenkins ci auto commit"
+                                git push origin refs/tags/%newTag%
+                            '''
+                        }
                     }
                 }
             }
@@ -90,7 +91,9 @@ pipeline {
 
     post {
         always {
-            cleanWs()
+            node('BuildAgent01') {
+                cleanWs()
+            }
             script {
                 currentBuild.description = "${params.RELEASE_TYPE} : ${newTag}"
             }

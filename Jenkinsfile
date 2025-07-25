@@ -40,7 +40,7 @@ pipeline {
                     withEnv(["newTag=${newTag}"]) {
                         bat '''
                             cd src
-                            dotnet build --configfile .nuget/NuGet.Config PipelineNuget-CustomConfigurationManager.sln
+                            dotnet build --configfile .nuget/NuGet.Config -c Release PipelineNuget-CustomConfigurationManager.sln
                             echo 'Packing...'
                             dotnet pack -c Release -p:Version=%newTag% PipelineNuget-CustomConfigurationManager.sln
                         '''

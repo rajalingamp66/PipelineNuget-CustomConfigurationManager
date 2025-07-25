@@ -3,7 +3,7 @@ import groovy.transform.Field
 @Field String newTag = ''
 
 pipeline {
-    agent { label 'doa-injwn01.in.lab' }
+    agent any
 
     parameters {
         string(name: 'BRANCH', defaultValue: 'main_1.0', description: 'Git branch to build')
@@ -12,7 +12,7 @@ pipeline {
 
     environment {
         NUGET_SOURCE = "https://nuget.pkg.github.com/rajalingamp66/index.json"
-        GITHUB_TOKEN = credentials("github-packages-read-write")
+        GITHUB_TOKEN1 = credentials("github-packages-read-write")
     }
 
     stages {

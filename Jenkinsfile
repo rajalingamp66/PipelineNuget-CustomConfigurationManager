@@ -81,16 +81,16 @@ pipeline {
         }
     }
 
-   post {
+  post {
     always {
         script {
             currentBuild.description = "${params.RELEASE_TYPE} : ${newTag}"
         }
 
-        // Now wrapped in node, so FilePath context is available
-        node {
+        node('any') {
             cleanWs()
         }
     }
 }
+
 }

@@ -10,15 +10,7 @@ pipeline {
     }
 
     parameters {
-        gitParameter(
-            branchFilter: 'origin/(.*)',
-            defaultValue: 'main_1.0',
-            name: 'BRANCH',
-            type: 'PT_BRANCH',
-            listSize: '10',
-            quickFilterEnabled: true,
-            useRepository: 'https://github.com/rajalingamp66/PipelineNuget-CustomConfigurationManager'
-        )
+        string(name: 'BRANCH', defaultValue: 'main_1.0', description: 'Git Branch to build')
         choice(name: 'RELEASE_TYPE', choices: ['major', 'minor'], description: 'Select the release type for build')
     }
 

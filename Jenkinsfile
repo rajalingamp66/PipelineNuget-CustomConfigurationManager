@@ -1,9 +1,9 @@
 import groovy.transform.Field
 
-@Field String newTag=''
+@Field String newTag = ''
 
 pipeline {
-   agent any
+    agent any
 
     parameters {
         string(name: 'BRANCH', defaultValue: 'main_1.0', description: 'Git branch to build')
@@ -87,8 +87,12 @@ pipeline {
 
     post {
         always {
-            cleanWs()
             script {
+                // Ensure cleanWs is executed inside a node
+                node {
+                    cleanWs()
+                }
+
                 currentBuild.description = "${RELEASE_TYPE} : ${newTag}"
             }
         }

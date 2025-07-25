@@ -38,12 +38,11 @@ pipeline {
                 script {
                     echo 'Building the NuGet package...'
                     withEnv(["newTag=${newTag}"]) {
-                        bat '''
-                            cd src
-                            dotnet build --configfile .nuget/NuGet.Config -c Release PipelineNuget-CustomConfigurationManager.sln
+                        bat """
+                            dotnet build --configfile src\\.nuget\\NuGet.Config -c Release src\\PipelineNuget-CustomConfigurationManager.sln
                             echo 'Packing...'
-                            dotnet pack -c Release -p:Version=%newTag% PipelineNuget-CustomConfigurationManager.sln
-                        '''
+                            dotnet pack -c Release -p:Version=%newTag% -o ./nupkgs src\\PipelineNuget-CustomConfigurationManager.sln
+                        """
                     }
                 }
             }
@@ -54,14 +53,14 @@ pipeline {
                 script {
                     echo 'Pushing NuGet package...'
                     withCredentials([string(credentialsId: 'github-packages-read-write', variable: 'GITHUB_TOKEN1')]) {
-                        bat '''
+                        bat """
                             echo Pushing to NuGet using token...
-                            dotnet nuget push src\\**\\bin\\Release\\*.nupkg ^
+                            dotnet nuget push .\\nupkgs\\*.nupkg ^
                                 -k %GITHUB_TOKEN1% ^
                                 -s https://nuget.pkg.github.com/rajalingamp66/index.json ^
                                 --skip-duplicate ^
                                 --verbosity detailed
-                        '''
+                        """
                     }
                 }
             }
@@ -72,8 +71,8 @@ pipeline {
                 script {
                     withCredentials([usernamePassword(credentialsId: 'github-nice-cxone', usernameVariable: 'GIT_USERNAME', passwordVariable: 'GIT_PASSWORD')]) {
                         withEnv(["newTag=${newTag}"]) {
-                            bat '''
-                                echo "Pushing tag: %newTag%"
+                            bat """
+                                echo Pushing tag: %newTag%
 
                                 git config --local credential.helper "!f() { echo username=\\%GIT_USERNAME%; echo password=\\%GIT_PASSWORD%; }; f"
                                 git config user.email "jenkins@vj-linux"
@@ -81,7 +80,7 @@ pipeline {
 
                                 git tag -a %newTag% -m "jenkins ci auto commit"
                                 git push origin refs/tags/%newTag%
-                            '''
+                            """
                         }
                     }
                 }
@@ -91,9 +90,7 @@ pipeline {
 
     post {
         always {
-            node('BuildAgent01') {
-                cleanWs()
-            }
+            cleanWs()
             script {
                 currentBuild.description = "${params.RELEASE_TYPE} : ${newTag}"
             }

@@ -12,7 +12,6 @@ pipeline {
 
     environment {
         NUGET_SOURCE = "https://nuget.pkg.github.com/rajalingamp66/index.json"
-        GITHUB_TOKEN1 = credentials("github-packages-read-write")
     }
 
     stages {
@@ -54,9 +53,16 @@ pipeline {
             steps {
                 script {
                     echo 'Pushing NuGet package...'
-                    bat '''
-                        dotnet nuget push src\\**\\bin\\Release\\*.nupkg -k %GITHUB_TOKEN% -s %NUGET_SOURCE% --skip-duplicate
-                    '''
+                    withCredentials([string(credentialsId: 'github-packages-read-write', variable: 'GITHUB_TOKEN1')]) {
+                        bat '''
+                            echo Pushing to NuGet using token...
+                            dotnet nuget push src\\**\\bin\\Release\\*.nupkg ^
+                                -k %GITHUB_TOKEN1% ^
+                                -s https://nuget.pkg.github.com/rajalingamp66/index.json ^
+                                --skip-duplicate ^
+                                --verbosity detailed
+                        '''
+                    }
                 }
             }
         }
@@ -84,14 +90,13 @@ pipeline {
     }
 
     post {
-    always {
-       node('BuildAgent01') {
-    cleanWs()
-        }
-        script {
-            currentBuild.description = "${params.RELEASE_TYPE} : ${newTag}"
+        always {
+            node('BuildAgent01') {
+                cleanWs()
+            }
+            script {
+                currentBuild.description = "${params.RELEASE_TYPE} : ${newTag}"
+            }
         }
     }
-}
-
 }

@@ -6,31 +6,30 @@ pipeline {
     agent { label 'doa-injwn01.in.lab' }
 
     parameters {
-        gitParameter(
-            branchFilter: 'origin/(.*)',
-            defaultValue: 'main_1.0',
-            name: 'BRANCH',
-            type: 'PT_BRANCH',
-            listSize: '10',
-            quickFilterEnabled: true,
-            useRepository: 'https://github.com/rajalingamp66/PipelineNuget-CustomConfigurationManager'
-        )
+        string(name: 'BRANCH', defaultValue: 'main_1.0', description: 'Git branch to build')
         choice(name: 'RELEASE_TYPE', choices: ['major', 'minor'], description: 'Select the release type for build')
     }
 
     environment {
         NUGET_SOURCE = "https://nuget.pkg.github.com/rajalingamp66/index.json"
-        GITHUB_USERNAME = "rajalingamp66"
         GITHUB_TOKEN = credentials("github-packages-read-write")
     }
 
     stages {
+        stage('Check Git Access') {
+            steps {
+                git credentialsId: 'github-nice-cxone',
+                    url: 'https://github.com/rajalingamp66/PipelineNuget-CustomConfigurationManager.git',
+                    branch: "${params.BRANCH}"
+            }
+        }
+
         stage("Preparation Stage") {
             steps {
                 script {
-                    newTag = powershell(returnStdout: true, script: ".\\resolveGitChanges.ps1 ${RELEASE_TYPE} ${BRANCH}").trim()
-                    println "Branch name: ${BRANCH}"
-                    println "New Tag generated: ${newTag}"
+                    newTag = powershell(returnStdout: true, script: ".\\resolveGitChanges.ps1 ${params.RELEASE_TYPE} ${params.BRANCH}").trim()
+                    echo "Branch name: ${params.BRANCH}"
+                    echo "New Tag generated: ${newTag}"
                 }
             }
         }
@@ -38,31 +37,37 @@ pipeline {
         stage('Build') {
             steps {
                 script {
-                    echo 'Building the package...'
+                    echo 'Building the NuGet package...'
                     withEnv(["newTag=${newTag}"]) {
                         bat '''
-                            cd ./src
+                            cd src
                             dotnet build --configfile .nuget/NuGet.Config PipelineNuget-CustomConfigurationManager.sln
-                            echo 'Packing the build...'
+                            echo 'Packing...'
                             dotnet pack -c Release -p:Version=%newTag% PipelineNuget-CustomConfigurationManager.sln
                         '''
                     }
+                }
+            }
+        }
 
-                    echo 'Pushing the NuGet package...'
+        stage('Push to NuGet') {
+            steps {
+                script {
+                    echo 'Pushing NuGet package...'
                     bat '''
-                        dotnet nuget push src/**/bin/Release/*.nupkg -k %GITHUB_TOKEN% -s %NUGET_SOURCE% --skip-duplicate
+                        dotnet nuget push src\\**\\bin\\Release\\*.nupkg -k %GITHUB_TOKEN% -s %NUGET_SOURCE% --skip-duplicate
                     '''
                 }
             }
         }
 
-        stage('Push Tag') {
+        stage('Push Git Tag') {
             steps {
                 script {
                     withCredentials([usernamePassword(credentialsId: 'github-nice-cxone', usernameVariable: 'GIT_USERNAME', passwordVariable: 'GIT_PASSWORD')]) {
                         withEnv(["newTag=${newTag}"]) {
                             bat '''
-                                echo "%newTag%"
+                                echo "Pushing tag: %newTag%"
 
                                 git config --local credential.helper "!f() { echo username=\\%GIT_USERNAME%; echo password=\\%GIT_PASSWORD%; }; f"
                                 git config user.email "jenkins@vj-linux"
@@ -82,7 +87,7 @@ pipeline {
         always {
             cleanWs()
             script {
-                currentBuild.description = "${RELEASE_TYPE} : ${newTag}"
+                currentBuild.description = "${params.RELEASE_TYPE} : ${newTag}"
             }
         }
     }

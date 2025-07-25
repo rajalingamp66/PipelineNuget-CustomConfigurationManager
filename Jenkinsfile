@@ -87,10 +87,9 @@ pipeline {
             currentBuild.description = "${params.RELEASE_TYPE} : ${newTag}"
         }
 
-        node('any') {
+        node('BuildAgent01') {
             cleanWs()
         }
     }
 }
-
 }

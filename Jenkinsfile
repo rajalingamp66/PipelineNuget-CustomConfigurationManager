@@ -84,11 +84,14 @@ pipeline {
     }
 
     post {
-        always {
-            cleanWs()
-            script {
-                currentBuild.description = "${params.RELEASE_TYPE} : ${newTag}"
-            }
+    always {
+       node('BuildAgent01') {
+    cleanWs()
+        }
+        script {
+            currentBuild.description = "${params.RELEASE_TYPE} : ${newTag}"
         }
     }
+}
+
 }

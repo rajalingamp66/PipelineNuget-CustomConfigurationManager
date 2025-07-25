@@ -6,7 +6,7 @@
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 		<IncludeSymbols>True</IncludeSymbols>
 		<IncludeSource>True</IncludeSource>
-		<PackageId>CustomConfigurationManager</PackageId>
+		<PackageId>PipelineNuget-CustomConfigurationManager</PackageId>
 		<IsPackable>true</IsPackable>
 		<Product>CustomConfigurationManager</Product>
 		<Version>1.0.0</Version>

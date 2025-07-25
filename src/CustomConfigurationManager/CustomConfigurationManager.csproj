@@ -8,13 +8,12 @@
 		<IncludeSource>True</IncludeSource>
 		<PackageId>PipelineNuget-CustomConfigurationManager</PackageId>
 		<IsPackable>true</IsPackable>
-		<Product>CustomConfigurationManager</Product>
 		<Version>1.0.0</Version>
 		<Authors>Rajalingam</Authors>
 		<Company>NICE inContact</Company>
 		<Description>Custom Configuration Manager supporting .NET Framework and .NET Core with AWS Secrets integration.</Description>
 		<PackageTags>Configuration AWS SecretsManager netstandard2.0 net48</PackageTags>
-		<RepositoryUrl>https://github.com/NiceLuc/encrypted-configs.git</RepositoryUrl>
+		<RepositoryUrl>https://github.com/rajalingamp66/PipelineNuget-CustomConfigurationManager</RepositoryUrl>
 		<!-- optional -->
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 	</PropertyGroup>

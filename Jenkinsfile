@@ -19,7 +19,7 @@ pipeline {
     }
 
     environment {
-        NUGET_SOURCE = "https://nuget.pkg.github.com/inContact/index.json"
+        NUGET_SOURCE = "https://nuget.pkg.github.com/rajalingamp66/index.json"
         GITHUB_USERNAME = "Rajalingam.Periyathambi@nice.com"
         GITHUB_TOKEN = credentials("github-packages-read-write")
     }

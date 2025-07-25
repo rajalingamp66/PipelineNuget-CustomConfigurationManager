@@ -26,10 +26,10 @@ function createNewVersion([string]$branchName, [string]$release, [string]$latest
       $newVersion = "$($versionComponents[0]).$($versionComponents[1]).$($versionComponents[2])-alpha"
     }
   }
+
   return $newVersion
 }
 
-# Default fallback version
 [string]$currentVersion = "0.0.0"
 
 try {

@@ -33,6 +33,9 @@ pipeline {
                     if (!newTag?.trim()) {
                         error "Version tag generation failed. Please check the resolveGitChanges.ps1 script."
                     }
+
+                    writeFile file: 'tag-version.txt', text: newTag
+                    archiveArtifacts artifacts: 'tag-version.txt', fingerprint: true
                 }
             }
         }
@@ -82,6 +85,7 @@ pipeline {
                                 git config user.email "jenkins@vj-linux"
                                 git config user.name "jenkins"
 
+                                git tag -d %newTag% || echo tag does not exist
                                 git tag -a %newTag% -m "jenkins ci auto commit"
                                 git push origin refs/tags/%newTag%
                             """

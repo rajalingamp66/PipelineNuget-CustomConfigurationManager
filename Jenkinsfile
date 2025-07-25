@@ -3,7 +3,7 @@ import groovy.transform.Field
 @Field String newTag=''
 
 pipeline {
-    agent { label 'doa-injwn01.in.lab' }
+   agent any
 
     parameters {
         string(name: 'BRANCH', defaultValue: 'main_1.0', description: 'Git branch to build')

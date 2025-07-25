@@ -7,6 +7,13 @@ function createNewVersion([string]$branchName, [string]$release, [string]$latest
   $latestVersion = $latestVersion.Replace("-alpha", "")
   $versionComponents = $latestVersion -split "\."
 
+  if ($versionComponents.Length -lt 3) {
+    # Pad missing components with 0
+    while ($versionComponents.Length -lt 3) {
+      $versionComponents += "0"
+    }
+  }
+
   if ($branchName -eq "main" -or $branchName -eq "main_1.0") {
     if ($release -eq "major") {
       $versionComponents[0] = [int]$versionComponents[0] + 1
@@ -40,6 +47,14 @@ if ($latestTag) {
     $cleanTag = $latestTag.Substring(1)
   } else {
     $cleanTag = $latestTag
+  }
+
+  # ✅ Ensure the version has 3 components
+  $versionParts = $cleanTag -split "\."
+  if ($versionParts.Length -eq 1) {
+    $cleanTag = "$($versionParts[0]).0.0"
+  } elseif ($versionParts.Length -eq 2) {
+    $cleanTag = "$($versionParts[0]).$($versionParts[1]).0"
   }
 
   $latestTagCommit = (git rev-list -n 1 $latestTag)

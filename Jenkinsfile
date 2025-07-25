@@ -25,7 +25,6 @@ pipeline {
     }
 
     stages {
-
         stage('Check Git Access') {
             steps {
                 git credentialsId: 'github-nice-cxone',

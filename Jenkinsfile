@@ -82,11 +82,16 @@ pipeline {
     }
 
     post {
-        always {
+    always {
+        script {
+            currentBuild.description = "${params.RELEASE_TYPE} : ${newTag}"
+        }
+
+        // Ensure cleanWs has node context
+        node {
             cleanWs()
-            script {
-                currentBuild.description = "${params.RELEASE_TYPE} : ${newTag}"
-            }
         }
     }
+}
+
 }

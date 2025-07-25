@@ -17,7 +17,6 @@ pipeline {
     }
 
     stages {
-
         stage('Checkout') {
             steps {
                 checkout([
@@ -34,9 +33,9 @@ pipeline {
         stage("Preparation Stage") {
             steps {
                 script {
-                    newTag = powershell(returnStdout: true, script: ".\\resolveGitChanges.ps1 ${RELEASE_TYPE} ${BRANCH}").trim()
-                    println "Branch name: ${BRANCH}"
-                    println "New Tag generated: ${newTag}"
+                    newTag = powershell(returnStdout: true, script: ".\\resolveGitChanges.ps1 ${params.RELEASE_TYPE} ${params.BRANCH}").trim()
+                    echo "Branch name: ${params.BRANCH}"
+                    echo "New Tag generated: ${newTag}"
                 }
             }
         }
@@ -87,13 +86,11 @@ pipeline {
 
     post {
         always {
+            node {
+                cleanWs()
+            }
             script {
-                // Ensure cleanWs is executed inside a node
-                node {
-                    cleanWs()
-                }
-
-                currentBuild.description = "${RELEASE_TYPE} : ${newTag}"
+                currentBuild.description = "${params.RELEASE_TYPE} : ${newTag}"
             }
         }
     }

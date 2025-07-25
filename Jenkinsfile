@@ -29,6 +29,10 @@ pipeline {
                     newTag = powershell(returnStdout: true, script: ".\\resolveGitChanges.ps1 ${params.RELEASE_TYPE} ${params.BRANCH}").trim()
                     echo "Branch name: ${params.BRANCH}"
                     echo "New Tag generated: ${newTag}"
+
+                    if (!newTag?.trim()) {
+                        error "Version tag generation failed. Please check the resolveGitChanges.ps1 script."
+                    }
                 }
             }
         }
@@ -41,7 +45,7 @@ pipeline {
                         bat """
                             dotnet build --configfile src\\.nuget\\NuGet.Config -c Release src\\PipelineNuget-CustomConfigurationManager.sln
                             echo 'Packing...'
-                            dotnet pack -c Release -p:Version=%newTag% -o ./nupkgs src\\PipelineNuget-CustomConfigurationManager.sln
+                            dotnet pack --no-build -c Release -p:Version=%newTag% -o ./nupkgs src\\PipelineNuget-CustomConfigurationManager.sln
                         """
                     }
                 }
@@ -57,7 +61,7 @@ pipeline {
                             echo Pushing to NuGet using token...
                             dotnet nuget push .\\nupkgs\\*.nupkg ^
                                 -k %GITHUB_TOKEN1% ^
-                                -s https://nuget.pkg.github.com/rajalingamp66/index.json ^
+                                -s ${env.NUGET_SOURCE} ^
                                 --skip-duplicate ^
                                 --verbosity detailed
                         """

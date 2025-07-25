@@ -29,30 +29,35 @@ function createNewVersion([string]$branchName, [string]$release, [string]$latest
   return $newVersion
 }
 
-[Boolean]$buildChanged = $false
-[string]$latestTag = (git describe --tags (git rev-list --tags --max-count=1))
+# Default fallback version
+[string]$currentVersion = "0.0.0"
 
-if ($latestTag) {
-  Write-Host "Latest tag: $latestTag"
-  $latestTagCommit = (git rev-list -n 1 $latestTag)
-  $currentVersion = $latestTag
+try {
+  $latestTag = git describe --tags (git rev-list --tags --max-count=1)
+  if ($latestTag) {
+    Write-Host "Latest tag: $latestTag"
+    $latestTagCommit = (git rev-list -n 1 $latestTag)
+    $currentVersion = $latestTag
+  } else {
+    Write-Host "No tags found. Starting with version 0.0.0"
+  }
+} catch {
+  Write-Host "Error retrieving latest tag. Using default version 0.0.0"
 }
 
 [string]$HEAD = (git rev-parse HEAD)
 Set-Content -Path "changes.log" -Value "HEAD_COMMIT=$HEAD"
 Add-Content -Path "changes.log" -Value "latestTagCommit=$latestTagCommit"
 
-if ($HEAD.Trim() -ne $latestTagCommit.Trim()) {
-  $buildChanged = $true
-  Add-Content -Path "changes.log" -Value "component has been changed"
-}
+[Boolean]$buildChanged = $HEAD.Trim() -ne $latestTagCommit.Trim()
 
-if (-not $buildChanged) {
-  $newVersion = $currentVersion
-  Write-Host "No changes. Keeping version: $newVersion"
-} else {
+if ($buildChanged) {
+  Add-Content -Path "changes.log" -Value "component has been changed"
   $newVersion = createNewVersion -branchName $branchName -release $release -latestVersion $currentVersion
   Write-Host "New version: $newVersion"
+} else {
+  $newVersion = $currentVersion
+  Write-Host "No changes. Keeping version: $newVersion"
 }
 
 Write-Output "${newVersion}"

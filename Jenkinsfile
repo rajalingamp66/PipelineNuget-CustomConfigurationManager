@@ -85,8 +85,8 @@ pipeline {
 
     post {
     always {
-        node {
-            cleanWs()
+       node('BuildAgent01') {
+    cleanWs()
         }
         script {
             currentBuild.description = "${params.RELEASE_TYPE} : ${newTag}"

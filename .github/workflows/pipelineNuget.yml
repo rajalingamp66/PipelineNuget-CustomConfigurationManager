@@ -36,7 +36,7 @@ jobs:
     
     - name: Publish NuGet package
       run: |
-        dotnet nuget add source https://api.nuget.org/v3/index.json --name github --username inContact --password ${{ secrets.GH_TOKEN }}
+        dotnet nuget add source https://nuget.pkg.github.com/inContact/index.json --name github --username inContact --password ${{ secrets.GH_TOKEN }}
         $package = Get-ChildItem -Path ./nupkgs -Filter *.nupkg | Select-Object -First 1
         if ($package) {
           dotnet nuget push $package.FullName --source github --api-key ${{ secrets.GH_TOKEN }} --skip-duplicate
